@@ -1,0 +1,86 @@
+---
+title: "Week 10 Assignment- extra credit"
+author: "Jiaxin Zheng"
+date: "2024-12-04"
+output:
+  pdf_document: default
+  html_document: default
+---
+In Text Mining with R, Chapter 2 looks at Sentiment Analysis.  https://www.tidytextmining.com/sentiment.html
+In this assignment, you should start by getting the primary example code from chapter 2 working in an R Markdown document.  You should provide a citation to this base code.  You’re then asked to extend the code in two ways:
+
+Work with a different corpus of your choosing, and
+Incorporate at least one additional sentiment lexicon (possibly from another R package that you’ve found through research).
+As usual, please submit links to both an .Rmd file posted in your GitHub repository and to your code on rpubs.com.  You make work on a small team on this assignment.
+
+```{r}
+library(tidyr)
+library(dplyr)
+library(httr)  
+library(tidytext)
+library(readtext)
+library(textdata)
+library(stringr)
+library(janeaustenr)
+library(ggplot2)
+library(wordcloud)
+library(reshape2)
+library(RColorBrewer)
+```
+
+```{r}
+df<- read.csv("https://raw.githubusercontent.com/Jennyjjxxzz/Data607_Week10Assignment/refs/heads/main/sentimentdataset.csv") %>% 
+  select(c(Platform, Text))
+
+tok_df<- df %>% 
+  unnest_tokens(word, Text)
+
+data("stop_words")
+clean_df<- tok_df %>% 
+  anti_join(stop_words)
+```
+
+```{r}
+print(tok_df)
+```
+
+```{r}
+word_freq <- tok_df%>%
+  count(word, sort = TRUE)
+
+# View word frequency
+print(word_freq)
+```
+
+
+```{r}
+# Get sentiment lexicon
+sentiment_lexicon <- get_sentiments("bing")
+
+sentiment_analysis <- tok_df %>%
+  inner_join(sentiment_lexicon, by = "word") %>%
+  count(word, sentiment, sort = TRUE)
+
+print(sentiment_analysis)
+```
+
+```{r}
+wordcloud(words = word_freq$word, freq = word_freq$n, min.freq = 2, 
+          max.words = 100, random.order = FALSE, colors = brewer.pal(8, "Dark2"))
+```
+
+```{r}
+platform_sentiment <- clean_df %>%
+  inner_join(sentiment_lexicon, by = "word") %>%
+  group_by(Platform, sentiment) %>%
+  summarise(count = n(), .groups = "drop")
+
+
+ggplot(platform_sentiment, aes(x = Platform, y = count, fill = sentiment)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Overall Sentiment by Platform",
+       x = "Platform",
+       y = "Count of Sentiments") +
+  theme_bw()
+```
+
